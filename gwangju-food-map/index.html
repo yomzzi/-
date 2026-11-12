@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>동명동·충장로 밥지도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+/* Layout: 손그림 느낌의 종이 지도 한 장 + 옆(모바일은 아래) 가게 카드 목록. 핀 색 = 분류, ♥ 찜 = 선호하는 곳 */
+:root{
+  --paper:#fbf6ee; --paper-2:#f3eadb; --ink:#3b2f2a; --ink-soft:#7a6a60;
+  --line:#e2d4c1; --street:#f1c9a5; --blob-a:#ffe3d6; --blob-b:#e2f1e4; --blob-c:#fdf0c4;
+  --local:#f08a5d; --kia:#d6283c; --popular:#4fa58c; --must:#ff6f91;
+  --card:#fffdf8; --chip:#fff; --focus:#2f6fdf;
+  --f-display:"Jua","Gowun Dodum",system-ui,sans-serif;
+  --f-body:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#231d1a; --paper-2:#2c2420; --ink:#f6ece2; --ink-soft:#bfae9f;
+  --line:#4a3d35; --street:#6b4a35; --blob-a:#4a2f28; --blob-b:#253a31; --blob-c:#463b20;
+  --local:#ff9d73; --kia:#ff5a6b; --popular:#6cc8ab; --must:#ff86a5;
+  --card:#2e2622; --chip:#3a302b; --focus:#7aa7ff; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#231d1a; --paper-2:#2c2420; --ink:#f6ece2; --ink-soft:#bfae9f;
+  --line:#4a3d35; --street:#6b4a35; --blob-a:#4a2f28; --blob-b:#253a31; --blob-c:#463b20;
+  --local:#ff9d73; --kia:#ff5a6b; --popular:#6cc8ab; --must:#ff86a5;
+  --card:#2e2622; --chip:#3a302b; --focus:#7aa7ff; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance;letter-spacing:.01em}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.15}
+h1 .tag{display:inline-block;font-size:.45em;vertical-align:middle;background:var(--must);color:#fff;border-radius:999px;padding:3px 10px;margin-left:6px;transform:rotate(-4deg)}
+.lede{color:var(--ink-soft);margin:6px 0 0;max-width:62ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:14px;border:2px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:6px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip .dot{width:10px;height:10px;border-radius:50%}
+.chip[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+.chip:focus-visible,.place:focus-visible,.btn:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.main{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
+.mapbox{background:var(--paper-2);border:2px dashed var(--line);border-radius:22px;padding:8px;position:relative}
+.mapbox svg{display:block;width:100%;height:auto;max-width:100%;touch-action:manipulation}
+.pin{cursor:pointer;transition:opacity .2s}
+.pin.dim{opacity:.18}
+.pin:hover .bubble,.pin.sel .bubble{stroke-width:7}
+.pin.sel .bubble{stroke:var(--ink)}
+.detail{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.detail .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.badge{font-size:12px;border-radius:999px;padding:2px 9px;color:#fff;letter-spacing:.02em}
+.b-local{background:var(--local)}.b-kia{background:var(--kia)}.b-popular{background:var(--popular)}.b-must{background:var(--must)}
+.detail h3{font-size:22px}
+.detail .meta{color:var(--ink-soft);font-size:14px}
+.detail a{color:var(--ink);font-weight:700}
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.group h2{font-size:19px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.group h2 .dot{width:12px;height:12px;border-radius:50%}
+.list{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.place{width:100%;text-align:left;font:inherit;color:inherit;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 12px;display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;cursor:pointer}
+.place .emo{font-size:22px;text-align:center}
+.place .nm{font-family:var(--f-display);font-size:17px;line-height:1.2}
+.place .mn{color:var(--ink-soft);font-size:13px}
+.place .heart{font-size:12px;background:var(--must);color:#fff;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.place.sel{border-color:var(--ink)}
+.place.dim{opacity:.35}
+.route{background:var(--card);border:2px solid var(--must);border-radius:18px;padding:14px 16px}
+.route h2{font-size:20px;margin-bottom:8px}
+.steps{display:flex;flex-wrap:wrap;align-items:center;gap:6px 4px;margin:0;padding:0;list-style:none}
+.steps li{display:flex;align-items:center;gap:4px}
+.stop{font-family:var(--f-display);background:var(--blob-a);border-radius:999px;padding:3px 11px;font-size:15px}
+.leg{font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.note{color:var(--ink-soft);font-size:13px;margin:8px 0 0}
+details.team{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:12px 16px}
+details.team summary{cursor:pointer;font-family:var(--f-display);font-size:19px}
+.tablewrap{overflow-x:auto;margin-top:10px}
+table{border-collapse:collapse;font-size:13px;min-width:640px;width:100%}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{font-family:var(--f-display);font-weight:400;font-size:14px}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.btn{font:inherit;border:2px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:999px;padding:7px 16px;cursor:pointer;margin-top:10px}
+.copied{margin-left:8px;color:var(--popular);font-size:14px}
+textarea#tsv{width:100%;height:120px;margin-top:8px;font:12px/1.4 ui-monospace,Consolas,monospace;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:10px}
+footer{color:var(--ink-soft);font-size:12.5px}
+@media (prefers-reduced-motion:reduce){.pin{transition:none}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>동명동·충장로 밥지도 <span class="tag">빵집 빼고!</span></h1>
+    <p class="lede">걸어서 다니는 광주 여행용 식당 21곳입니다. ♥ 찜 표시가 달린 5곳은 제가 특히 좋아하는 곳이에요. 핀을 누르면 메뉴와 영업 정보가 나오고, 맨 아래 데이터를 복사해 팀원들 지도(숙소·카페·관광)와 합칠 수 있어요.</p>
+  </header>
+
+  <div class="chips" role="group" aria-label="분류로 보기" id="chips"></div>
+
+  <div class="main">
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <div class="mapbox"><svg id="map" role="img" aria-label="동명동과 충장로 식당 위치 그림 지도"></svg></div>
+      <div class="detail" id="detail" aria-live="polite"></div>
+    </div>
+    <aside class="side" id="side"></aside>
+  </div>
+
+  <details class="team">
+    <summary>팀 지도 합치기용 데이터 (좌표 포함)</summary>
+    <p class="note">아래 표를 그대로 복사해서 스프레드시트나 지도 앱(구글 내 지도 등) 가져오기에 붙여 넣으면 됩니다. 탭으로 구분된 형식이에요.</p>
+    <button class="btn" id="copyBtn" type="button">표 데이터 복사</button><span class="copied" id="copied" hidden>복사했어요</span>
+    <textarea id="tsv" readonly aria-label="탭 구분 데이터"></textarea>
+    <div class="tablewrap"><table id="tbl"></table></div>
+  </details>
+
+  <footer>핀 위치는 네이버 플레이스 좌표(2026-11-12 조회)입니다. 동네 구역·동계천로·ACC는 위치를 잡기 쉽게 대략 그린 것이라 실제 도로와 다를 수 있어요. 영업시간은 블로그·플레이스 기준이니 가기 전에 한 번 확인하세요.</footer>
+</div>
+
+<script>
+const CATS = {
+  local:   { label:"광주에만 있는 맛", color:"--local" },
+  kia:     { label:"KIA 선수 단골", color:"--kia" },
+  popular: { label:"동명동 인기 식사", color:"--popular" }
+};
+const P = [
+  {k:"haengbok", n:"행복담", cat:"local", must:1, e:"🍲", menu:"크림순대국밥", why:"광주에서만 먹을 수 있는 크림순대국밥. 웨이팅이 길어 오픈런 추천", hours:"월~토 11:30~20:30 (브레이크 15:00~17:30), 일요일 휴무", road:"동구 서석로85번길 2", x:126.9205976, y:35.1496343},
+  {k:"jins", n:"진스통", cat:"local", must:1, e:"🥬", menu:"상추튀김", why:"광주 명물 상추튀김 대표집. 1인분부터 주문 가능", hours:"화~일 11:00~22:00, 월요일 휴무", road:"동구 충장로안길 26, 2층", x:126.9159414, y:35.14766},
+  {k:"eunsung", n:"은성김밥", cat:"local", must:0, e:"🥬", menu:"상추튀김 (노포)", why:"1975년부터 영업한 것으로 소개되는 충장로 노포 분식", hours:"08:00~21:30 (블로그 기준)", road:"동구 충장로안길 40-2", x:126.9171791, y:35.1468773},
+  {k:"pyeonghwa", n:"평화식당", cat:"local", kia:1, must:1, e:"🍳", menu:"애호박찌개 · 생삼겹살", why:"24시간 영업하는 50년 노포. KIA 선수들도 자주 온다는 후기", hours:"24시간 (블로그 기준)", road:"동구 서석로7번길 6-27", x:126.915308, y:35.1461195},
+  {k:"mimi", n:"미미원", cat:"local", must:1, e:"🥞", menu:"육전 · 빈대떡", why:"동명동 전 전문점, 리뷰 2,042건", hours:"방문 전 확인", road:"동구 백서로 218", x:126.9264822, y:35.1470794},
+  {k:"youngmi", n:"영미오리탕", cat:"local", kia:1, must:0, e:"🦆", menu:"들깨오리탕", why:"광주 5미 오리탕. KIA 외국인 선수들이 즐겨 찾는다는 후기", hours:"방문 전 확인", road:"북구 경양로 126 (유동)", x:126.9055099, y:35.1613929, off:1},
+  {k:"parksj", n:"박순자 녹두집", cat:"local", must:0, e:"🥣", menu:"녹두전 · 팥죽", why:"대인시장 안 향토음식. 팥죽 7천 원, 수제비 6천 원", hours:"방문 전 확인", road:"동구 구성로204번길 26 (대인시장)", x:126.9163923, y:35.151877},
+  {k:"somun", n:"소문난튀김전문", cat:"local", must:0, e:"🍤", menu:"상추튀김", why:"동명동 쪽 상추튀김. 튀김 조합 세트 5가지", hours:"방문 전 확인", road:"동구 중앙로 238-1", x:126.919445, y:35.1532323},
+  {k:"dolgop", n:"돌곱1991 동명직영점", cat:"kia", must:0, e:"🔥", menu:"한우곱창", why:"벽 가득 KIA 선수 사인 (김도영·이의리·한준수 등)", hours:"매일 17:00~00:30", road:"동구 동계천로 113", x:126.9228151, y:35.1506999},
+  {k:"sansu", n:"산수쌈밥 동명점", cat:"kia", must:1, e:"🍚", menu:"우렁쌈밥", why:"'KIA 선수 맛집'으로 유명한 점심 쌈밥집, 리뷰 3,844건", hours:"방문 전 확인", road:"동구 동계로 11", x:126.9242274, y:35.1528788},
+  {k:"minoru", n:"미노루", cat:"kia", must:0, e:"🍶", menu:"가라아게 · 이자카야", why:"10년째 동명동을 지키는 KIA 단골 이자카야", hours:"저녁 영업", road:"동구 동명로25번길 7-2", x:126.9228467, y:35.1514788},
+  {k:"hanmaum", n:"한마음포차", cat:"kia", must:0, e:"🍢", menu:"포차 안주", why:"야구선수·배우들이 자주 간다는 충장로 노포 포차", hours:"저녁 영업", road:"동구 서석로10번길 10", x:126.9153684, y:35.1443949},
+  {k:"chungjang", n:"충장포차", cat:"kia", must:0, e:"🦪", menu:"굴찜 · 제철 안주", why:"'#기아선수술집'으로 소개되는 황금동 포차", hours:"저녁 영업", road:"동구 서석로 33", x:126.9172067, y:35.1462814},
+  {k:"tiger", n:"기아타이거맥주", cat:"kia", must:0, e:"🍺", menu:"야구 중계 응원 펍", why:"경기 날 응원가와 함께 보는 팬들의 성지 (충장포차와 같은 건물)", hours:"경기일 중심", road:"동구 서석로 33", x:126.9172067, y:35.1462814},
+  {k:"yeoneo", n:"연어쁘다 광주본점", cat:"popular", must:0, e:"🍜", menu:"연어소바", why:"리뷰 약 1만 건, 긴 연어를 올린 소바", hours:"방문 전 확인", road:"동구 동계천로 163, 2층", x:126.9269356, y:35.1493064},
+  {k:"songkyung", n:"송경솥밥 동명점", cat:"popular", must:0, e:"🍚", menu:"트러플 차돌 솥밥", why:"리뷰 약 1만 건 동명동 솥밥 대표", hours:"방문 전 확인", road:"동구 동명로14번길 19-8, 2층", x:126.9254923, y:35.150318},
+  {k:"junghee", n:"정희 동명점", cat:"popular", must:0, e:"🥣", menu:"수제비 · 감자전", why:"동명동 한식 인기 1위", hours:"방문 전 확인", road:"동구 동명로20번길 20", x:126.9255318, y:35.1504249},
+  {k:"wangsan", n:"왕산식당 동명점", cat:"popular", must:0, e:"🥟", menu:"동파육 스팀번", why:"리뷰 키워드 1위가 동파육인 중식당", hours:"방문 전 확인", road:"동구 동명로14번길 6-1", x:126.9239115, y:35.1501334},
+  {k:"jungjeong", n:"중정", cat:"popular", must:0, e:"🍱", menu:"숯불 장어덮밥", why:"씨간장 소스 민물장어", hours:"방문 전 확인", road:"동구 동명로 59", x:126.9270685, y:35.1513241},
+  {k:"kaedon", n:"카에돈", cat:"popular", must:0, e:"🥩", menu:"화로 규카츠", why:"개인 화로에 직접 익혀 먹는 규카츠", hours:"방문 전 확인", road:"동구 동계천로 143-26", x:126.9252715, y:35.1495261},
+  {k:"solbat", n:"솔밭솥밥", cat:"popular", must:0, e:"🍚", menu:"솥밥 정식", why:"리뷰 8천여 건, 줄 서는 솥밥집", hours:"방문 전 확인", road:"동구 동명로 9-5", x:126.9225994, y:35.1503373}
+];
+const ROUTE = ["sansu","mimi","haengbok","jins","pyeonghwa"];
+
+// ---- projection (meters) ----
+const B = {minLng:126.9132, maxLng:126.9292, minLat:35.1428, maxLat:35.1552};
+const KX = Math.cos(35.149*Math.PI/180)*111320, KY = 110540;
+const W = Math.round((B.maxLng-B.minLng)*KX), H = Math.round((B.maxLat-B.minLat)*KY);
+const px = lng => (lng-B.minLng)*KX, py = lat => (B.maxLat-lat)*KY;
+function dist(a,b){const R=6371000,t=Math.PI/180,dLa=(b.y-a.y)*t,dLo=(b.x-a.x)*t;const h=Math.sin(dLa/2)**2+Math.cos(a.y*t)*Math.cos(b.y*t)*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
+const walkMin = m => Math.max(1, Math.round(m*1.25/75));
+const byK = Object.fromEntries(P.map(p=>[p.k,p]));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+// layout pins with gentle collision nudge
+const R = 34;
+P.forEach(p=>{ p.tx = px(p.x); p.ty = py(p.y); if(p.off){p.tx=70;p.ty=70;} p.cx=p.tx; p.cy=p.ty; });
+for(let it=0; it<80; it++){
+  for(let i=0;i<P.length;i++) for(let j=i+1;j<P.length;j++){
+    const a=P[i], b=P[j]; let dx=b.cx-a.cx, dy=b.cy-a.cy; let d=Math.hypot(dx,dy);
+    const min = R*2+6;
+    if(d<min){ if(d<0.01){dx=1;dy=0.3;d=1.04;} const push=(min-d)/2; dx/=d; dy/=d; a.cx-=dx*push; a.cy-=dy*push; b.cx+=dx*push; b.cy+=dy*push; }
+  }
+}
+
+const NS="http://www.w3.org/2000/svg";
+const svg=document.getElementById("map");
+svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+const el=(tag,attrs={},parent=svg)=>{const n=document.createElementNS(NS,tag);for(const k in attrs)n.setAttribute(k,attrs[k]);parent.appendChild(n);return n;};
+
+function drawBase(){
+  // districts (approximate)
+  const blobs=[
+    {lng:126.9166,lat:35.1462,rx:250,ry:190,fill:"var(--blob-a)",label:"충장로 · 황금동",lx:-40,ly:175},
+    {lng:126.9247,lat:35.1505,rx:330,ry:230,fill:"var(--blob-b)",label:"동명동",lx:200,ly:-150},
+    {lng:126.9163,lat:35.1522,rx:150,ry:115,fill:"var(--blob-c)",label:"대인시장",lx:-30,ly:-95}
+  ];
+  blobs.forEach(b=>{
+    const cx=px(b.lng), cy=py(b.lat);
+    el("ellipse",{cx,cy,rx:b.rx,ry:b.ry,fill:b.fill,stroke:"var(--line)","stroke-width":4,"stroke-dasharray":"14 10"});
+    const t=el("text",{x:cx+b.lx,y:cy+b.ly,"text-anchor":"middle","font-family":"Jua, sans-serif","font-size":40,fill:"var(--ink-soft)"}); t.textContent=b.label;
+  });
+  // 동계천로 (approximate cafe street)
+  const pts=[[126.9204,35.1519],[126.9228,35.1507],[126.9253,35.1495],[126.9272,35.1492],[126.9288,35.1490]].map(([a,b])=>[px(a),py(b)]);
+  let d=`M${pts[0][0]},${pts[0][1]}`; for(let i=1;i<pts.length;i++){const [x0,y0]=pts[i-1],[x1,y1]=pts[i];d+=` Q${(x0+x1)/2},${(y0+y1)/2-18} ${x1},${y1}`;}
+  el("path",{d,fill:"none",stroke:"var(--street)","stroke-width":22,"stroke-linecap":"round","stroke-linejoin":"round",opacity:.9});
+  const st=el("text",{x:px(126.9262),y:py(35.1489)+48,"text-anchor":"middle","font-family":"Gowun Dodum, sans-serif","font-size":26,fill:"var(--ink-soft)"}); st.textContent="동계천로 (카페거리)";
+  // ACC landmark (approx)
+  const ax=px(126.9200), ay=py(35.1466);
+  el("rect",{x:ax-80,y:ay-46,width:160,height:92,rx:26,fill:"var(--paper)",stroke:"var(--ink-soft)","stroke-width":3,"stroke-dasharray":"8 7"});
+  const at=el("text",{x:ax,y:ay-4,"text-anchor":"middle","font-family":"Jua, sans-serif","font-size":30,fill:"var(--ink)"}); at.textContent="🏛 ACC";
+  const at2=el("text",{x:ax,y:ay+28,"text-anchor":"middle","font-family":"Gowun Dodum, sans-serif","font-size":19,fill:"var(--ink-soft)"}); at2.textContent="국립아시아문화전당";
+  // compass + scale bar
+  const sx=W-300, sy=H-60;
+  el("line",{x1:sx,y1:sy,x2:sx+200,y2:sy,stroke:"var(--ink)","stroke-width":6,"stroke-linecap":"round"});
+  [0,100,200].forEach(m=>el("line",{x1:sx+m,y1:sy-12,x2:sx+m,y2:sy+12,stroke:"var(--ink)","stroke-width":4}));
+  const sl=el("text",{x:sx+100,y:sy-22,"text-anchor":"middle","font-family":"Gowun Dodum, sans-serif","font-size":24,fill:"var(--ink)"}); sl.textContent="200m · 걸어서 약 3분";
+  const n=el("text",{x:W-50,y:70,"text-anchor":"middle","font-family":"Jua, sans-serif","font-size":34,fill:"var(--ink)"}); n.textContent="N";
+  el("path",{d:`M${W-50},84 l-14,34 l14,-9 l14,9 z`,fill:"var(--ink)"});
+}
+
+function drawRoute(){
+  const pts=ROUTE.map(k=>byK[k]);
+  let d=`M${pts[0].cx},${pts[0].cy}`; pts.slice(1).forEach(p=>d+=` L${p.cx},${p.cy}`);
+  el("path",{d,fill:"none",stroke:"var(--must)","stroke-width":9,"stroke-dasharray":"2 20","stroke-linecap":"round",opacity:.9,id:"routeLine"});
+}
+
+const pinEls={};
+function drawPins(){
+  // leader lines for nudged pins
+  P.forEach(p=>{ if(!p.off && Math.hypot(p.cx-p.tx,p.cy-p.ty)>6){ el("line",{x1:p.tx,y1:p.ty,x2:p.cx,y2:p.cy,stroke:"var(--ink-soft)","stroke-width":3}); el("circle",{cx:p.tx,cy:p.ty,r:6,fill:"var(--ink-soft)"}); }});
+  P.forEach(p=>{
+    const g=el("g",{class:"pin",tabindex:0,role:"button","aria-label":`${p.n}, ${p.menu}`,"data-k":p.k});
+    el("circle",{class:"bubble",cx:p.cx,cy:p.cy,r:R,fill:"var(--card)",stroke:`var(${CATS[p.cat].color})`,"stroke-width":5},g);
+    if(p.kia && p.cat!=="kia") el("circle",{cx:p.cx+R*0.72,cy:p.cy+R*0.72,r:10,fill:"var(--kia)",stroke:"var(--card)","stroke-width":3},g);
+    const t=el("text",{x:p.cx,y:p.cy+12,"text-anchor":"middle","font-size":34},g); t.textContent=p.e;
+    if(p.must){
+      el("path",{d:`M${p.cx-30},${p.cy-R-30} h60 a8 8 0 0 1 8 8 v16 a8 8 0 0 1 -8 8 h-60 a8 8 0 0 1 -8 -8 v-16 a8 8 0 0 1 8 -8 z`,fill:"var(--must)"},g);
+      const mt=el("text",{x:p.cx,y:p.cy-R-8,"text-anchor":"middle","font-family":"Jua, sans-serif","font-size":22,fill:"#fff"},g); mt.textContent="♥ 찜";
+    }
+    const lb=el("text",{x:p.cx,y:p.cy+R+28,"text-anchor":"middle","font-family":"Jua, sans-serif","font-size":23,fill:"var(--ink)",stroke:"var(--paper-2)","stroke-width":6,"paint-order":"stroke"},g);
+    lb.textContent = p.off ? `↖ ${p.n}` : p.n.replace(/ (동명직영점|동명점|광주본점)$/,"");
+    if(p.off){ const nearest=byK.parksj; const sub=el("text",{x:p.cx+6,y:p.cy+R+54,"text-anchor":"start","font-family":"Gowun Dodum, sans-serif","font-size":19,fill:"var(--ink-soft)"},g); sub.textContent=`지도 밖 · 대인시장에서 약 ${walkMin(dist(nearest,p))}분`; lb.setAttribute("text-anchor","start"); lb.setAttribute("x",p.cx-24); }
+    g.addEventListener("click",()=>select(p.k));
+    g.addEventListener("keydown",ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();select(p.k);}});
+    pinEls[p.k]=g;
+  });
+}
+
+// ---- side list ----
+const side=document.getElementById("side"); const itemEls={};
+Object.entries(CATS).forEach(([c,info])=>{
+  const sec=document.createElement("section"); sec.className="group";
+  sec.innerHTML=`<h2><span class="dot" style="background:var(${info.color})"></span>${info.label}</h2>`;
+  const ul=document.createElement("ul"); ul.className="list";
+  P.filter(p=>p.cat===c).forEach(p=>{
+    const li=document.createElement("li");
+    const b=document.createElement("button"); b.type="button"; b.className="place"; b.dataset.k=p.k;
+    b.innerHTML=`<span class="emo" aria-hidden="true">${p.e}</span><span><span class="nm">${p.n}</span><br><span class="mn">${p.menu}${p.kia&&p.cat!=="kia"?" · KIA 단골":""}</span></span>${p.must?'<span class="heart">♥ 찜</span>':'<span></span>'}`;
+    b.addEventListener("click",()=>select(p.k)); li.appendChild(b); ul.appendChild(li); itemEls[p.k]=b;
+  });
+  sec.appendChild(ul); side.appendChild(sec);
+});
+
+// ---- detail ----
+const detail=document.getElementById("detail");
+function renderDetail(p){
+  const badges=[`<span class="badge b-${p.cat}">${CATS[p.cat].label}</span>`];
+  if(p.kia&&p.cat!=="kia") badges.push('<span class="badge b-kia">KIA 단골</span>');
+  if(p.must) badges.push('<span class="badge b-must">♥ 찜한 곳</span>');
+  const q=encodeURIComponent(`광주 ${p.n}`);
+  detail.innerHTML=`<div class="row">${badges.join("")}</div>
+    <h3>${p.e} ${p.n}</h3>
+    <div><b>${p.menu}</b> · ${p.why}</div>
+    <div class="meta">🕒 ${p.hours}</div>
+    <div class="meta">📍 ${p.road} · <a href="https://map.naver.com/p/search/${q}" target="_blank" rel="noopener">네이버 지도에서 보기</a></div>`;
+}
+let selected=null;
+function select(k){
+  selected=k;
+  Object.entries(pinEls).forEach(([kk,g])=>g.classList.toggle("sel",kk===k));
+  Object.entries(itemEls).forEach(([kk,b])=>b.classList.toggle("sel",kk===k));
+  renderDetail(byK[k]);
+  const g=pinEls[k]; g.parentNode.appendChild(g);
+}
+
+// ---- filters ----
+const FILTERS=[{id:"all",label:"전체 21곳"},{id:"must",label:"♥ 찜한 5곳",color:"--must"},{id:"local",label:"광주에만",color:"--local"},{id:"kia",label:"KIA 단골",color:"--kia"},{id:"popular",label:"동명동 인기",color:"--popular"}];
+const chips=document.getElementById("chips");
+function match(p,f){ if(f==="all")return true; if(f==="must")return !!p.must; if(f==="kia")return p.cat==="kia"||!!p.kia; return p.cat===f; }
+function applyFilter(f){
+  [...chips.children].forEach(c=>c.setAttribute("aria-pressed",c.dataset.f===f));
+  P.forEach(p=>{const on=match(p,f); pinEls[p.k].classList.toggle("dim",!on); itemEls[p.k].classList.toggle("dim",!on);});
+  try{localStorage.setItem("gj-food-filter",f);}catch(e){}
+}
+FILTERS.forEach(f=>{const b=document.createElement("button");b.type="button";b.className="chip";b.dataset.f=f.id;b.innerHTML=(f.color?`<span class="dot" style="background:var(${f.color})"></span>`:"")+f.label;b.addEventListener("click",()=>applyFilter(f.id));chips.appendChild(b);});
+
+
+// ---- team data ----
+const head=["이름","분류","찜","대표메뉴","주소","위도","경도"];
+const rows=P.map(p=>[p.n,CATS[p.cat].label+(p.kia&&p.cat!=="kia"?", KIA 단골":""),p.must?"Y":"",p.menu,"광주 "+p.road,p.y.toFixed(7),p.x.toFixed(7)]);
+const tsv=[head,...rows].map(r=>r.join("\t")).join("\n");
+document.getElementById("tsv").value=tsv;
+document.getElementById("tbl").innerHTML=`<thead><tr>${head.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td${i>=5?' class="num"':""}>${c}</td>`).join("")}</tr>`).join("")}</tbody>`;
+document.getElementById("copyBtn").addEventListener("click",()=>{
+  const ok=()=>{const c=document.getElementById("copied");c.hidden=false;setTimeout(()=>c.hidden=true,2000);};
+  const ta=document.getElementById("tsv");
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(tsv).then(ok).catch(()=>{ta.focus();ta.select();});}
+  else{ta.focus();ta.select();}
+});
+
+drawBase(); drawPins();
+let f0="all"; try{f0=localStorage.getItem("gj-food-filter")||"all";}catch(e){}
+applyFilter(FILTERS.some(f=>f.id===f0)?f0:"all");
+select("haengbok");
+</script>
+</body>
+</html>
